@@ -79,8 +79,8 @@ if [ "$1" = "$FDEVICE" -o "$FOX_BUILD_DEVICE" = "$FDEVICE" ]; then
 		if [ "$IS_ZSH" -eq 1 ]; then
 			echo "NOTE: Running in ZSH mode"
 		else
-			echo "ERROR! This script couldn't detect the device properly. Make sure you're using bash or zsh."
-			exit 1
+			THIS_DEVICE="$FOX_BUILD_DEVICE"
+			echo "NOTE: THIS_DEVICE not passed as arg, using FOX_BUILD_DEVICE=$THIS_DEVICE"
 		fi
 	fi
 
