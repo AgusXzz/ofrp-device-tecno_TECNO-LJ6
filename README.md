@@ -11,7 +11,7 @@ GPU                     | Mali-G57 MC2
 Memory                  | 8 GB RAM
 Storage                 | 128/256 GB (UFS 2.2)
 MicroSD                 | microSDXC (dedicated slot)
-Shipped Android Version | 15.0
+Shipped Android Version | 16.0
 Battery                 | Non-removable 7000 mAh
 Display                 | 1080 x 2460 pixels (~396 ppi density), 6.78 inches
 Camera                  | 108 MP (wide), 2 MP (macro); 8 MP (front, wide)
