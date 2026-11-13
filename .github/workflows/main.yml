@@ -18,6 +18,9 @@ env:
   LUNCH_COMBO: twrp_LJ6-eng
   TZ: Asia/Jakarta
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -117,3 +120,17 @@ jobs:
           name: OrangeFox-LJ6-${{ inputs.fox_branch }}
           path: ~/artifacts/*
           if-no-files-found: warn
+
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: fox-LJ6-${{ inputs.fox_branch }}-${{ github.run_number }}
+          name: OrangeFox LJ6 (${{ inputs.fox_branch }}) #${{ github.run_number }}
+          body: |
+            OrangeFox Recovery untuk TECNO POVA 7 4G (LJ6)
+            Branch: ${{ inputs.fox_branch }}
+            Target: ${{ inputs.build_target }}
+            Flash `vendor_boot.img` ke partisi `vendor_boot`. Backup dulu sebelum flash.
+          files: /home/runner/artifacts/*
+          fail_on_unmatched_files: true
