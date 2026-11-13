@@ -1,0 +1,115 @@
+name: Build OrangeFox (TECNO LJ6)
+
+on:
+  workflow_dispatch:
+    inputs:
+      fox_branch:
+        description: "Branch OrangeFox (contoh: 12.1)"
+        required: true
+        default: "12.1"
+      build_target:
+        description: "Target make"
+        required: true
+        default: "adbd vendorbootimage"
+
+env:
+  DEVICE_CODENAME: LJ6
+  DEVICE_DIR: device/tecno/TECNO-LJ6
+  LUNCH_COMBO: twrp_LJ6-eng
+  TZ: Asia/Jakarta
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout device tree
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: true
+
+      - name: Add swap (16 GB)
+        run: |
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+          df -h /
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git curl wget zip unzip rsync python3 python3-pip bc bison build-essential \
+            ccache flex g++-multilib gcc-multilib libc6-dev-i386 lib32ncurses-dev \
+            lib32z1-dev libncurses5-dev libssl-dev libxml2-utils xsltproc zlib1g-dev \
+            lz4 xz-utils openjdk-11-jdk repo libtinfo5 || true
+          sudo ln -sf /usr/bin/python3 /usr/bin/python || true
+          git config --global user.name "builder"
+          git config --global user.email "builder@users.noreply.github.com"
+
+      - name: Sync OrangeFox source
+        run: |
+          mkdir -p ~/fox
+          cd ~
+          git clone --depth=1 https://gitlab.com/OrangeFox/sync.git ~/fox_sync
+          cd ~/fox_sync
+          ./orangefox_sync.sh --branch "${{ inputs.fox_branch }}" --path ~/fox
+
+      - name: Place device tree
+        run: |
+          mkdir -p ~/fox/${{ env.DEVICE_DIR }}
+          rsync -a --exclude='.git' --exclude='.github' ./ ~/fox/${{ env.DEVICE_DIR }}/
+          ls ~/fox/${{ env.DEVICE_DIR }}
+
+      - name: Fetch common tree (jika belum ada)
+        run: |
+          cd ~/fox
+          if [ ! -d device/transsion/mt6789-common ]; then
+            git clone https://github.com/transsion-mt6789/twrp-device_transsion_mt6789-common.git \
+              -b fox_12.1-tranos15 device/transsion/mt6789-common
+          fi
+
+      - name: Build
+        run: |
+          cd ~/fox
+          set +e
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export FOX_BUILD_DEVICE=${{ env.DEVICE_CODENAME }}
+          export LC_ALL=C
+          set +u
+          source build/envsetup.sh
+          lunch ${{ env.LUNCH_COMBO }}
+          mka ${{ inputs.build_target }} -j$(nproc --all)
+
+      - name: Collect output
+        if: always()
+        run: |
+          mkdir -p ~/artifacts
+          OUT=~/fox/out/target/product/TECNO-LJ6
+          [ -d "$OUT" ] || OUT=$(ls -d ~/fox/out/target/product/* 2>/dev/null | head -1)
+          echo "Output dir: $OUT"
+          ls -lh "$OUT" || true
+          find "$OUT" -maxdepth 2 \( -name "*.img" -o -name "OrangeFox*.zip" \) \
+            -not -name "system*" -not -name "vendor.img" \
+            -exec cp -v {} ~/artifacts/ \; || true
+          ls -lh ~/artifacts
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: OrangeFox-LJ6-${{ inputs.fox_branch }}
+          path: ~/artifacts/*
+          if-no-files-found: warn
