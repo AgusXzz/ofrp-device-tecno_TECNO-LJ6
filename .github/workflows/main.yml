@@ -20,7 +20,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 360
 
     steps:
@@ -54,8 +54,12 @@ jobs:
             git curl wget zip unzip rsync python3 python3-pip bc bison build-essential \
             ccache flex g++-multilib gcc-multilib libc6-dev-i386 lib32ncurses-dev \
             lib32z1-dev libncurses5-dev libssl-dev libxml2-utils xsltproc zlib1g-dev \
-            lz4 xz-utils openjdk-11-jdk repo libtinfo5 || true
-          sudo ln -sf /usr/bin/python3 /usr/bin/python || true
+            lz4 xz-utils openjdk-11-jdk libtinfo5
+          sudo ln -sf /usr/bin/python3 /usr/bin/python
+          # Pasang repo langsung dari Google
+          sudo curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo -o /usr/local/bin/repo
+          sudo chmod a+rx /usr/local/bin/repo
+          repo --version
           git config --global user.name "builder"
           git config --global user.email "builder@users.noreply.github.com"
 
